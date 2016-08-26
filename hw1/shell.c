@@ -24,6 +24,12 @@ int cmd_quit(tok_t arg[]) {
 
 int cmd_help(tok_t arg[]);
 
+char *jth(char *cwd);
+int cmd_pwd(tok_t arg[]);
+
+char *wd;
+char *ytg;
+
 /* Command Lookup Table Structures */
 typedef int cmd_fun_t (tok_t args[]); // cmd functions take token array and return int
 typedef struct fun_desc {
@@ -35,6 +41,7 @@ typedef struct fun_desc {
 fun_desc_t cmd_table[] = {
   {cmd_help, "?", "show this help menu"},
   {cmd_quit, "quit", "quit the command shell"},
+  {cmd_pwd, "pwd", "show working directory"},
 };
 
 int lookup(char cmd[]) {
@@ -51,6 +58,21 @@ int cmd_help(tok_t arg[]) {
     printf("%s - %s\n",cmd_table[i].cmd, cmd_table[i].doc);
   }
   return 1;
+}
+char *jth(char *cwd){
+	char a[1024];
+	if (getcwd(a, sizeof(a)) != NULL){
+		strcpy(cwd,a);
+		return cwd;
+	}
+	else
+		return strerror(errno);
+}
+int cmd_pwd(tok_t arg[]) {
+	if(arg!=NULL){}
+	char cwd[1024];
+	printf("%s\n",jth(cwd));
+	return 1;
 }
 
 void init_shell()
@@ -112,6 +134,10 @@ int shell (int argc, char *argv[]) {
   tok_t *t;			                     // tokens parsed from input
   // if you look in parse.h, you'll see that tokens are just c-style strings
   
+  wd = malloc(1024*sizeof(char));
+	jth(wd);
+  ytg = malloc(1024*sizeof(char));
+	jth(ytg);
   int lineNum = 0;
   int fundex = -1;
   
@@ -121,9 +147,11 @@ int shell (int argc, char *argv[]) {
   printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
 
   lineNum=0;
+  char cwd[1024];
   // change this to print the current working directory before each line as well as the line number.
-  fprintf(stdout, "%d: ", lineNum);
+  fprintf(stdout, "%d %s: ", lineNum,jth(cwd));
   while ((s = freadln(stdin))){
+   lineNum++;
     t = getToks(s); // break the line into tokens
     fundex = lookup(t[0]); // Is first token a shell literal
     if(fundex >= 0) cmd_table[fundex].fun(&t[1]);
@@ -132,7 +160,8 @@ int shell (int argc, char *argv[]) {
       fprintf(stdout, "This shell only supports built-ins. Replace this to run programs as commands.\n");
     }
     // change this to print the current working directory before each line as well as the line number.
-    fprintf(stdout, "%d: ", lineNum);
+    fprintf(stdout, "%d %s: ", lineNum,jth(cwd));
   }
   return 0;
 }
+
